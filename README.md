@@ -147,6 +147,62 @@ results/               # Output folder (created automatically)
   all_tables_comparison.txt
 ```
 
+## File Descriptions
+
+### Core Computation Files (Used for All Tables)
+
+- **`config.py`**: Stores all model parameters (interest rates, volatilities, etc.) and Monte Carlo settings (K, M, time steps). Defines parameter sets for different tables.
+
+- **`models.py`**: Simulates the stochastic differential equations (SDEs). Implements:
+  - Interest rate process (CIR-type)
+  - Market price of risk process (OU)
+  - Pricing kernel evolution
+  - Functions to simulate single paths or multiple paths from a starting point
+
+- **`utility.py`**: Implements CRRA utility formulas and optimal controls:
+  - Optimal terminal wealth X_T* (Eq. 18)
+  - Optimal consumption path c_t* (Eq. 19)
+  - Numerical integration functions
+
+- **`budget_solver.py`**: Solves for the Lagrange multiplier y by enforcing budget constraints:
+  - Computes Monte Carlo estimates of budget constraints
+  - Uses root-finding to find y such that budget = X_0
+  - Handles both terminal wealth (TW) and intertemporal consumption (IC) cases
+
+- **`estimator.py`**: **Core of the Monte Carlo method** - Implements nested Monte Carlo to estimate optimal portfolio:
+  - Outer loop: Samples shocks at time 0
+  - Inner loop: Estimates conditional wealth X_{Δt}* for each shock
+  - Computes φ_t and optimal portfolio π_t* = φ_t / σ (Eq. 24, 28)
+
+### Table Generation & Output Files
+
+- **`experiments.py`**: Orchestrates running each table:
+  - `run_table_1()` through `run_table_6()` functions
+  - For each parameter combination: solves for y, estimates portfolio, collects results
+  - Automatically writes comparison reports after each table
+
+- **`paper_values.py`**: Stores reference values from the paper for comparison (Tables 1-6)
+
+- **`comparison.py`**: Formats and writes comparison reports:
+  - Creates side-by-side comparison (our values vs. paper values)
+  - Writes individual table files and combined report
+  - Calculates differences
+
+### Supporting Files
+
+- **`main.py`**: Command-line interface - parses arguments and calls appropriate functions
+
+- **`plotting.py`**: Optional visualization functions (not used for table generation)
+
+### How They Work Together
+
+1. **`main.py`** receives user command (e.g., `--table 1`)
+2. **`experiments.py`** orchestrates: for each parameter combination:
+   - **`budget_solver.py`** finds y (uses `models.py` and `utility.py`)
+   - **`estimator.py`** computes portfolio (uses nested MC with `models.py` and `utility.py`)
+3. **`experiments.py`** collects results and calls **`comparison.py`**
+4. **`comparison.py`** formats output using **`paper_values.py`** and writes to `results/` folder
+
 ## Mathematical Background
 
 The implementation solves the optimal portfolio problem in a complete market with:
